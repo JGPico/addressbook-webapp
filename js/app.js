@@ -83,7 +83,7 @@ class AddressBook {
                         <div class="contact-name">${this.escapeHtml(contact.name)}</div>
                     </div>
                     <div class="contact-actions">
-                        <button class="btn btn-danger" onclick="addressBook.deleteContact('${contact.id}')">
+                        <button class="btn btn-danger" data-contact-id="${this.escapeHtmlAttribute(contact.id)}">
                             Delete
                         </button>
                     </div>
@@ -103,12 +103,30 @@ class AddressBook {
                 </div>
             </div>
         `).join('');
+
+        // Attach event listeners to delete buttons
+        contactsList.querySelectorAll('.btn-danger').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const contactId = e.target.getAttribute('data-contact-id');
+                this.deleteContact(contactId);
+            });
+        });
     }
 
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    escapeHtmlAttribute(text) {
+        // Escape characters that are dangerous in HTML attributes
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
     }
 
     saveContacts() {
