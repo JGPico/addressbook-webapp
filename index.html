@@ -5,7 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Address Book</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="css/styles.css">
 </head>
 
@@ -16,6 +18,20 @@
         </header>
 
         <main>
+
+            <section class="contacts-section">
+                <div class="contacts-title-button-wrapper">
+                    <h2>Contacts</h2>
+                    <button type="submit" class="btn-add-contact btn-primary">+</button>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search contacts...">
+                </div>
+                <div id="contacts-list" class="contacts-list">
+                    <!-- Contacts will be dynamically inserted here -->
+                </div>
+            </section>
+
             <section class="contact-form-section">
                 <h2>Add New Contact</h2>
                 <form id="contact-form">
@@ -35,19 +51,9 @@
                         <label for="address">Address</label>
                         <textarea id="address" name="address" rows="3"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary">Add Contact</button>
                 </form>
             </section>
 
-            <section class="contacts-section">
-                <h2>Contacts</h2>
-                <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search contacts...">
-                </div>
-                <div id="contacts-list" class="contacts-list">
-                    <!-- Contacts will be dynamically inserted here -->
-                </div>
-            </section>
         </main>
     </div>
 

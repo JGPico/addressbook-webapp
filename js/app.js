@@ -35,7 +35,7 @@ class AddressBook {
     async addContact() {
         const form = document.getElementById('contact-form');
         const formData = new FormData(form);
-        
+
         const contactData = {
             name: formData.get('name'),
             email: formData.get('email'),
@@ -96,7 +96,7 @@ class AddressBook {
 
         try {
             const response = await fetch(`${this.apiBaseUrl}/contacts/search?q=${encodeURIComponent(searchTerm)}`);
-            
+
             if (!response.ok) {
                 throw new Error('Failed to search contacts');
             }
@@ -189,7 +189,7 @@ class AddressBook {
     async loadContacts() {
         try {
             const response = await fetch(`${this.apiBaseUrl}/contacts`);
-            
+
             if (!response.ok) {
                 throw new Error('Failed to load contacts');
             }
