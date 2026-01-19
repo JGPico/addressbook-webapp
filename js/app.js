@@ -1,11 +1,13 @@
 // Contact Management Application
 class AddressBook {
     constructor() {
-        this.contacts = this.loadContacts();
+        this.contacts = [];
+        this.apiBaseUrl = 'http://localhost:5000/api';
         this.init();
     }
 
-    init() {
+    async init() {
+        await this.loadContacts();
         this.renderContacts();
         this.setupEventListeners();
     }
@@ -13,53 +15,108 @@ class AddressBook {
     setupEventListeners() {
         // Form submission
         const form = document.getElementById('contact-form');
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            this.addContact();
+            await this.addContact();
         });
 
         // Search functionality
         const searchInput = document.getElementById('search-input');
+        let searchTimeout;
         searchInput.addEventListener('input', (e) => {
-            this.filterContacts(e.target.value);
+            // Debounce search to avoid too many API calls
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.filterContacts(e.target.value);
+            }, 300);
         });
     }
 
-    addContact() {
+    async addContact() {
         const form = document.getElementById('contact-form');
         const formData = new FormData(form);
         
-        const contact = {
-            id: Date.now().toString(),
+        const contactData = {
             name: formData.get('name'),
             email: formData.get('email'),
             phone: formData.get('phone'),
-            address: formData.get('address')
+            address: formData.get('address') || ''
         };
 
-        this.contacts.push(contact);
-        this.saveContacts();
-        this.renderContacts();
-        form.reset();
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/contacts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(contactData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to add contact');
+            }
+
+            const contact = await response.json();
+            this.contacts.push(contact);
+            this.renderContacts();
+            form.reset();
+        } catch (error) {
+            alert(`Error adding contact: ${error.message}`);
+            console.error('Error adding contact:', error);
+        }
     }
 
-    deleteContact(id) {
-        this.contacts = this.contacts.filter(contact => contact.id !== id);
-        this.saveContacts();
-        this.renderContacts();
+    async deleteContact(id) {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/contacts/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to delete contact');
+            }
+
+            this.contacts = this.contacts.filter(contact => contact.id !== id);
+            this.renderContacts();
+        } catch (error) {
+            alert(`Error deleting contact: ${error.message}`);
+            console.error('Error deleting contact:', error);
+        }
     }
 
-    filterContacts(searchTerm) {
-        const filtered = this.contacts.filter(contact => {
-            const term = searchTerm.toLowerCase();
-            return (
-                contact.name.toLowerCase().includes(term) ||
-                contact.email.toLowerCase().includes(term) ||
-                contact.phone.includes(term) ||
-                (contact.address && contact.address.toLowerCase().includes(term))
-            );
-        });
-        this.renderContacts(filtered);
+    async filterContacts(searchTerm) {
+        if (!searchTerm.trim()) {
+            // If search is empty, show all contacts
+            await this.loadContacts();
+            this.renderContacts();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/contacts/search?q=${encodeURIComponent(searchTerm)}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to search contacts');
+            }
+
+            const filtered = await response.json();
+            this.renderContacts(filtered);
+        } catch (error) {
+            console.error('Error searching contacts:', error);
+            // Fallback to client-side filtering if API fails
+            const filtered = this.contacts.filter(contact => {
+                const term = searchTerm.toLowerCase();
+                return (
+                    contact.name.toLowerCase().includes(term) ||
+                    contact.email.toLowerCase().includes(term) ||
+                    contact.phone.includes(term) ||
+                    (contact.address && contact.address.toLowerCase().includes(term))
+                );
+            });
+            this.renderContacts(filtered);
+        }
     }
 
     renderContacts(contactsToRender = null) {
@@ -129,13 +186,20 @@ class AddressBook {
             .replace(/>/g, '&gt;');
     }
 
-    saveContacts() {
-        localStorage.setItem('addressBookContacts', JSON.stringify(this.contacts));
-    }
+    async loadContacts() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/contacts`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to load contacts');
+            }
 
-    loadContacts() {
-        const stored = localStorage.getItem('addressBookContacts');
-        return stored ? JSON.parse(stored) : [];
+            this.contacts = await response.json();
+        } catch (error) {
+            console.error('Error loading contacts:', error);
+            alert(`Error loading contacts: ${error.message}. Make sure the backend server is running.`);
+            this.contacts = [];
+        }
     }
 }
 
