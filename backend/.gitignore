@@ -29,6 +29,8 @@ instance/
 
 # Data files
 contacts.json
+addressbook.db
+*.db
 
 # IDE
 .vscode/

@@ -5,9 +5,9 @@ Flask REST API backend for the Address Book web application.
 ## Features
 
 - RESTful API endpoints for contact management
-- JSON-based data storage
+- SQLite database for persistent data storage
 - CORS enabled for frontend communication
-- Search functionality
+- Search functionality with SQL queries
 
 ## API Endpoints
 
@@ -73,7 +73,19 @@ The API will be available at `http://localhost:5000`
 
 ## Data Storage
 
-Contacts are stored in `contacts.json` in the backend directory. The file is automatically created on first run.
+Contacts are stored in a SQLite database (`addressbook.db`) in the backend directory. The database and `contacts` table are automatically created on first run.
+
+### Database Schema
+
+```sql
+CREATE TABLE contacts (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address TEXT DEFAULT ''
+)
+```
 
 ## CORS
 
