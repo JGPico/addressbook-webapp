@@ -1,23 +1,26 @@
-// Contact Management Application
+/**
+ * Main Address Book Application
+ * Coordinates all components
+ */
+
 class AddressBook {
     constructor() {
-        this.contacts = [];
-        this.selectedContactId = null;
-        this.savedEmails = []; // Emails saved for the current contact
-        this.apiBaseUrl = 'http://localhost:5000/api';
+        this.apiService = new ApiService('http://localhost:5000/api');
+        this.emailManager = new EmailManager();
+        this.formManager = new ContactFormManager(this.emailManager);
+        this.contactListManager = new ContactListManager(
+            this.apiService,
+            (contact) => this.handleContactSelect(contact)
+        );
         this.init();
     }
 
     async init() {
         await this.loadContacts();
-        this.renderContacts();
-        this.renderContactForm(null); // Initialize empty form
+        this.contactListManager.renderContacts();
+        this.formManager.renderContactForm(null);
+        this.emailManager.initEmailList();
         this.setupEventListeners();
-        // Ensure email list is hidden on init
-        const emailList = document.getElementById('email-list');
-        if (emailList) {
-            emailList.classList.remove('visible');
-        }
     }
 
     setupEventListeners() {
@@ -40,291 +43,86 @@ class AddressBook {
 
         // Delete button
         document.getElementById('delete-btn').addEventListener('click', () => {
-            if (this.selectedContactId) {
+            if (this.contactListManager.getSelectedContactId()) {
                 if (confirm('Are you sure you want to delete this contact?')) {
-                    this.deleteContact(this.selectedContactId);
+                    this.deleteContact(this.contactListManager.getSelectedContactId());
                 }
             }
         });
 
         // Add email button - show/hide email entry form
         document.getElementById('add-email-btn').addEventListener('click', () => {
-            this.toggleEmailEntryForm();
+            this.emailManager.toggleEmailEntryForm();
         });
 
         // Allow Enter key to add email
         document.addEventListener('keypress', (e) => {
             if (e.target.classList.contains('email-input') && e.key === 'Enter') {
                 e.preventDefault();
-                this.addEmailToSaved();
+                this.emailManager.toggleEmailEntryForm();
             }
         });
+    }
+
+    handleContactSelect(contact) {
+        this.formManager.renderContactForm(contact);
     }
 
     newContact() {
-        this.selectedContactId = null;
-        this.renderContactForm(null);
+        this.contactListManager.clearSelection();
+        this.formManager.renderContactForm(null);
     }
 
     cancelEdit() {
-        if (this.selectedContactId) {
-            const contact = this.contacts.find(c => c.id === this.selectedContactId);
-            this.renderContactForm(contact);
+        const selectedId = this.contactListManager.getSelectedContactId();
+        if (selectedId) {
+            const contact = this.contactListManager.getContactById(selectedId);
+            this.formManager.renderContactForm(contact);
         } else {
-            this.renderContactForm(null);
+            this.formManager.renderContactForm(null);
         }
     }
 
-    parseName(name) {
-        if (!name) return { firstName: '', lastName: '' };
-        const parts = name.trim().split(/\s+/);
-        if (parts.length === 1) return { firstName: parts[0], lastName: '' };
-        const lastName = parts.pop();
-        const firstName = parts.join(' ');
-        return { firstName, lastName };
-    }
-
-    formatName(firstName, lastName) {
-        return `${firstName} ${lastName}`.trim();
-    }
-
-    renderContacts(contactsToRender = null) {
-        const contactsList = document.getElementById('contacts-list');
-        const contacts = contactsToRender || this.contacts;
-
-        if (contacts.length === 0) {
-            contactsList.innerHTML = `
-                <div class="empty-state">
-                    <p>No contacts</p>
-                </div>
-            `;
-            return;
-        }
-
-        contactsList.innerHTML = contacts.map(contact => {
-            const name = contact.name || '';
-            const isSelected = contact.id === this.selectedContactId ? 'selected' : '';
-            return `
-                <div class="contact-item ${isSelected}" data-contact-id="${this.escapeHtmlAttribute(contact.id)}">
-                    ${this.escapeHtml(name)}
-                </div>
-            `;
-        }).join('');
-
-        // Attach click listeners to contact items
-        contactsList.querySelectorAll('.contact-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const contactId = e.currentTarget.getAttribute('data-contact-id');
-                this.selectContact(contactId);
-            });
-        });
-    }
-
-    selectContact(contactId) {
-        this.selectedContactId = contactId;
-        const contact = this.contacts.find(c => c.id === contactId);
-        this.renderContactForm(contact);
-        this.renderContacts();
-    }
-
-    renderContactForm(contact) {
-        const firstNameInput = document.getElementById('firstName');
-        const lastNameInput = document.getElementById('lastName');
-        const emailList = document.getElementById('email-list');
-        const savedEmailsList = document.getElementById('saved-emails-list');
-        const deleteBtn = document.getElementById('delete-btn');
-
-        if (contact) {
-            const { firstName, lastName } = this.parseName(contact.name);
-            firstNameInput.value = firstName;
-            lastNameInput.value = lastName;
-
-            // Set saved emails from emails array or fallback to email field
-            this.savedEmails = contact.emails && contact.emails.length > 0
-                ? contact.emails
-                : (contact.email ? [contact.email] : []);
-            this.renderSavedEmails();
-
-            // Hide email entry form and clear it
-            emailList.classList.remove('visible');
-            emailList.innerHTML = this.createEmailField('', 0);
-            // Reset icon to plus
-            const addEmailBtn = document.getElementById('add-email-btn');
-            const icon = addEmailBtn.querySelector('i');
-            if (icon) {
-                icon.className = 'fa-solid fa-plus';
-            }
-
-            deleteBtn.style.display = 'inline-block';
-        } else {
-            firstNameInput.value = '';
-            lastNameInput.value = '';
-            this.savedEmails = [];
-            this.renderSavedEmails();
-            emailList.classList.remove('visible');
-            emailList.innerHTML = this.createEmailField('', 0);
-            // Reset icon to plus
-            const addEmailBtn = document.getElementById('add-email-btn');
-            const icon = addEmailBtn.querySelector('i');
-            if (icon) {
-                icon.className = 'fa-solid fa-plus';
-            }
-            deleteBtn.style.display = 'none';
-        }
-    }
-
-    toggleEmailEntryForm() {
-        const emailList = document.getElementById('email-list');
-        const addEmailBtn = document.getElementById('add-email-btn');
-        const icon = addEmailBtn.querySelector('i');
-
-        if (emailList.classList.contains('visible')) {
-            // If form is visible, add the email and hide the form
-            this.addEmailToSaved();
-            emailList.classList.remove('visible');
-            // Change icon back to plus
-            icon.className = 'fa-solid fa-plus';
-            // Clear the input
-            const emailInput = emailList.querySelector('.email-input');
-            if (emailInput) {
-                emailInput.value = '';
-            }
-        } else {
-            // Show the form
-            emailList.classList.add('visible');
-            // Change icon to minimize
-            icon.className = 'fa-solid fa-minimize';
-            // Focus on the input field
-            setTimeout(() => {
-                const emailInput = emailList.querySelector('.email-input');
-                if (emailInput) {
-                    emailInput.focus();
-                }
-            }, 100);
-        }
-    }
-
-    renderSavedEmails() {
-        const savedEmailsList = document.getElementById('saved-emails-list');
-
-        if (this.savedEmails.length === 0) {
-            savedEmailsList.innerHTML = '';
-            return;
-        }
-
-        savedEmailsList.innerHTML = this.savedEmails.map((email, index) => `
-            <div class="saved-email-item">
-                <span class="saved-email-text">${this.escapeHtml(email)}</span>
-                <button type="button" class="btn-remove-email" data-email-index="${index}"><i class="fa-solid fa-minus"></i></button>
-            </div>
-        `).join('');
-
-        // Attach remove listeners to saved email remove buttons
-        savedEmailsList.querySelectorAll('.btn-remove-email').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const index = parseInt(e.currentTarget.getAttribute('data-email-index'));
-                this.savedEmails.splice(index, 1);
-                this.renderSavedEmails();
-            });
-        });
-    }
-
-    createEmailField(email, index) {
-        const emailId = `email-${index}`;
-        return `
-            <div class="email-item">
-                <input type="email" id="${emailId}" name="email" value="${this.escapeHtmlAttribute(email)}" class="email-input" placeholder="Enter email" autocomplete="email" required>
-                ${index > 0 ? `<button type="button" class="btn-remove-email-input" data-index="${index}"><i class="fa-solid fa-minus"></i></button>` : ''}
-            </div>
-        `;
-    }
-
-    addEmailToSaved() {
-        const emailList = document.getElementById('email-list');
-        const emailInputs = emailList.querySelectorAll('.email-input');
-
-        // Get the email value from the first input
-        const currentEmail = emailInputs.length > 0 ? emailInputs[0].value.trim() : '';
-
-        if (currentEmail && !this.savedEmails.includes(currentEmail)) {
-            // Add to saved emails list
-            this.savedEmails.push(currentEmail);
-            this.renderSavedEmails();
-
-            // Clear the input field
-            emailInputs[0].value = '';
+    async loadContacts() {
+        try {
+            const contacts = await this.apiService.loadContacts();
+            this.contactListManager.setContacts(contacts);
+        } catch (error) {
+            alert(`Error loading contacts: ${error.message}. Make sure the backend server is running.`);
+            this.contactListManager.setContacts([]);
         }
     }
 
     async saveContact() {
-        const firstName = document.getElementById('firstName').value.trim();
-        const lastName = document.getElementById('lastName').value.trim();
-        const emailInputs = document.querySelectorAll('.email-input');
-        const inputEmail = Array.from(emailInputs)
-            .map(input => input.value.trim())
-            .filter(email => email.length > 0)[0];
+        const formData = this.formManager.collectFormData();
+        const validation = this.formManager.validateFormData(formData);
 
-        // Combine saved emails with any email in the input field
-        const allEmails = [...this.savedEmails];
-        if (inputEmail && !allEmails.includes(inputEmail)) {
-            allEmails.push(inputEmail);
-        }
-
-        if (!firstName || !lastName) {
-            alert('First name and last name are required');
+        if (!validation.isValid) {
+            alert(validation.error);
             return;
         }
 
-        if (allEmails.length === 0) {
-            alert('At least one email is required');
-            return;
-        }
-
-        const name = this.formatName(firstName, lastName);
-        const contactData = {
-            name: name,
-            email: allEmails[0], // Primary email for backward compatibility
-            emails: allEmails,   // Array of all emails
-            phone: '', // Keep for backward compatibility
-            address: '' // Keep for backward compatibility
-        };
+        const contactData = this.formManager.prepareContactData(formData);
 
         try {
-            let response;
-            if (this.selectedContactId) {
+            const selectedId = this.contactListManager.getSelectedContactId();
+            let contact;
+
+            if (selectedId) {
                 // Update existing contact
-                response = await fetch(`${this.apiBaseUrl}/contacts/${this.selectedContactId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(contactData)
-                });
+                contact = await this.apiService.updateContact(selectedId, contactData);
             } else {
                 // Create new contact
-                response = await fetch(`${this.apiBaseUrl}/contacts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(contactData)
-                });
+                contact = await this.apiService.createContact(contactData);
             }
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to save contact');
-            }
-
-            const contact = await response.json();
 
             // Update saved emails for the contact
-            this.savedEmails = allEmails;
+            this.emailManager.setSavedEmails(formData.emails);
 
             // Reload contacts
             await this.loadContacts();
-            this.selectContact(contact.id);
-            this.renderContacts();
+            this.contactListManager.selectContact(contact.id);
+            this.contactListManager.renderContacts();
         } catch (error) {
             alert(`Error saving contact: ${error.message}`);
             console.error('Error saving contact:', error);
@@ -333,53 +131,14 @@ class AddressBook {
 
     async deleteContact(id) {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/contacts/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to delete contact');
-            }
-
-            this.contacts = this.contacts.filter(contact => contact.id !== id);
-            this.selectedContactId = null;
-            this.renderContactForm(null);
-            this.renderContacts();
+            await this.apiService.deleteContact(id);
+            await this.loadContacts();
+            this.contactListManager.clearSelection();
+            this.formManager.renderContactForm(null);
+            this.contactListManager.renderContacts();
         } catch (error) {
             alert(`Error deleting contact: ${error.message}`);
             console.error('Error deleting contact:', error);
-        }
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    escapeHtmlAttribute(text) {
-        return String(text)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#x27;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-    }
-
-    async loadContacts() {
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/contacts`);
-
-            if (!response.ok) {
-                throw new Error('Failed to load contacts');
-            }
-
-            this.contacts = await response.json();
-        } catch (error) {
-            console.error('Error loading contacts:', error);
-            alert(`Error loading contacts: ${error.message}. Make sure the backend server is running.`);
-            this.contacts = [];
         }
     }
 }
