@@ -178,21 +178,8 @@ section h2 {
     background: #c0392b;
 }
 
-.btn-add-email {
-    background: none;
-    border: none;
-    color: #667eea;
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 4px 0;
-    text-align: left;
-    font-family: inherit;
-    transition: color 0.2s;
-}
-
 .btn-add-email:hover {
-    color: #5568d3;
-    text-decoration: underline;
+    background: #99c9ff;
 }
 
 .form-actions {
@@ -242,7 +229,7 @@ section h2 {
     background: #5568d3;
 }
 
-.btn-add-contact {
+.btn-add-circle {
     width: 28px;
     height: 28px;
     padding: 0;
@@ -265,7 +252,7 @@ section h2 {
 }
 
 .btn-add-contact i {
-    color: #000080;
+    color: #ffffff;
 }
 
 .btn-primary {
