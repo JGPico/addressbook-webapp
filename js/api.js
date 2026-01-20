@@ -4,8 +4,9 @@
  */
 
 class ApiService {
-    constructor(baseUrl = 'http://localhost:5000/api') {
-        this.baseUrl = baseUrl;
+    constructor(baseUrl = null) {
+        // Use environment variable or default to localhost for development
+        this.baseUrl = baseUrl || (window.API_BASE_URL || 'http://localhost:5000/api');
     }
 
     /**

@@ -5,7 +5,9 @@
 
 class AddressBook {
     constructor() {
-        this.apiService = new ApiService('http://localhost:5000/api');
+        // Use environment variable or default to localhost for development
+        const apiBaseUrl = window.API_BASE_URL || 'http://localhost:5000/api';
+        this.apiService = new ApiService(apiBaseUrl);
         this.emailManager = new EmailManager();
         this.formManager = new ContactFormManager(this.emailManager);
         this.contactListManager = new ContactListManager(
