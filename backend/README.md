@@ -170,13 +170,6 @@ python reset_db.py
 }
 ```
 
-### Backward Compatibility
-
-The API maintains backward compatibility:
-- Returns both `email` (primary) and `emails` (array) fields
-- Accepts either `email` or `emails` in POST/PUT requests
-- If only `email` is provided, it's converted to an `emails` array
-
 ## Dependencies
 
 - **Flask 3.0.0** - Web framework

@@ -135,14 +135,6 @@ The application uses SQLite with the following schema:
 
 See `backend/README.md` for detailed API documentation and database schema.
 
-## Deployment
-
-See `DEPLOYMENT.md` for comprehensive deployment instructions for:
-- Render.com (recommended)
-- Railway
-- Fly.io
-- Traditional VPS
-
 ## License
 
 See LICENSE file for details.
