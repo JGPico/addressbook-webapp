@@ -49,11 +49,9 @@ section {
 }
 
 section h2 {
-    margin-bottom: 10px;
     color: #667eea;
     font-size: 1.5rem;
-    justify-content: center;
-    align-items: center;
+    text-align: left;
 }
 
 .form-group {
@@ -116,13 +114,19 @@ section h2 {
 }
 
 .btn-add-contact {
-    padding: 3px6px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border: none;
-    border-radius: 36px;
-    font-size: 1rem;
-    font-weight: 600;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    font-weight: 100;
     cursor: pointer;
     transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .search-bar {
@@ -143,9 +147,11 @@ section h2 {
 }
 
 .contacts-title-button-wrapper {
+    margin-bottom: 10px;
     display: grid;
     grid-template-columns: 3fr 1fr;
     gap: 0px;
+    align-items: center;
 }
 
 .contacts-list {
