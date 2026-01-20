@@ -3,6 +3,7 @@ class AddressBook {
     constructor() {
         this.contacts = [];
         this.selectedContactId = null;
+        this.savedEmails = []; // Emails saved for the current contact
         this.apiBaseUrl = 'http://localhost:5000/api';
         this.init();
     }
@@ -10,6 +11,7 @@ class AddressBook {
     async init() {
         await this.loadContacts();
         this.renderContacts();
+        this.renderContactForm(null); // Initialize empty form
         this.setupEventListeners();
     }
 
@@ -42,7 +44,15 @@ class AddressBook {
 
         // Add email button
         document.getElementById('add-email-btn').addEventListener('click', () => {
-            this.addEmailField();
+            this.addEmailToSaved();
+        });
+
+        // Allow Enter key to add email
+        document.addEventListener('keypress', (e) => {
+            if (e.target.classList.contains('email-input') && e.key === 'Enter') {
+                e.preventDefault();
+                this.addEmailToSaved();
+            }
         });
     }
 
@@ -116,6 +126,7 @@ class AddressBook {
         const firstNameInput = document.getElementById('firstName');
         const lastNameInput = document.getElementById('lastName');
         const emailList = document.getElementById('email-list');
+        const savedEmailsList = document.getElementById('saved-emails-list');
         const deleteBtn = document.getElementById('delete-btn');
 
         if (contact) {
@@ -123,76 +134,107 @@ class AddressBook {
             firstNameInput.value = firstName;
             lastNameInput.value = lastName;
 
-            // Render emails
-            const emails = contact.email ? [contact.email] : [];
-            emailList.innerHTML = emails.map((email, index) => this.createEmailField(email, index)).join('');
+            // Set saved emails from emails array or fallback to email field
+            this.savedEmails = contact.emails && contact.emails.length > 0
+                ? contact.emails
+                : (contact.email ? [contact.email] : []);
+            this.renderSavedEmails();
 
-            // Attach remove listeners to email remove buttons
-            emailList.querySelectorAll('.btn-remove-email').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.currentTarget.closest('.email-item').remove();
-                });
-            });
+            // Render empty email input form
+            emailList.innerHTML = this.createEmailField('', 0);
 
             deleteBtn.style.display = 'inline-block';
         } else {
             firstNameInput.value = '';
             lastNameInput.value = '';
+            this.savedEmails = [];
+            this.renderSavedEmails();
             emailList.innerHTML = this.createEmailField('', 0);
             deleteBtn.style.display = 'none';
         }
+    }
+
+    renderSavedEmails() {
+        const savedEmailsList = document.getElementById('saved-emails-list');
+
+        if (this.savedEmails.length === 0) {
+            savedEmailsList.innerHTML = '';
+            return;
+        }
+
+        savedEmailsList.innerHTML = this.savedEmails.map((email, index) => `
+            <div class="saved-email-item">
+                <span class="saved-email-text">${this.escapeHtml(email)}</span>
+                <button type="button" class="btn-remove-email" data-email-index="${index}"><i class="fa-solid fa-minus"></i></button>
+            </div>
+        `).join('');
+
+        // Attach remove listeners to saved email remove buttons
+        savedEmailsList.querySelectorAll('.btn-remove-email').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.getAttribute('data-email-index'));
+                this.savedEmails.splice(index, 1);
+                this.renderSavedEmails();
+            });
+        });
     }
 
     createEmailField(email, index) {
         const emailId = `email-${index}`;
         return `
             <div class="email-item">
-                <input type="email" id="${emailId}" name="email" value="${this.escapeHtmlAttribute(email)}" class="email-input">
-                ${index > 0 ? `<button type="button" class="btn-remove-email" data-index="${index}"><i class="fa-solid fa-minus"></i></button>` : ''}
+                <input type="email" id="${emailId}" name="email" value="${this.escapeHtmlAttribute(email)}" class="email-input" placeholder="Enter email" autocomplete="email" required>
+                ${index > 0 ? `<button type="button" class="btn-remove-email-input" data-index="${index}"><i class="fa-solid fa-minus"></i></button>` : ''}
             </div>
         `;
     }
 
-    addEmailField() {
+    addEmailToSaved() {
         const emailList = document.getElementById('email-list');
-        const index = emailList.children.length;
-        const emailField = document.createElement('div');
-        emailField.className = 'email-item';
-        emailField.innerHTML = `
-            <input type="email" id="email-${index}" name="email" value="" class="email-input">
-            <button type="button" class="btn-remove-email" data-index="${index}"><i class="fa-solid fa-minus"></i></button>
-        `;
-        emailList.appendChild(emailField);
+        const emailInputs = emailList.querySelectorAll('.email-input');
 
-        // Attach remove listener
-        emailField.querySelector('.btn-remove-email').addEventListener('click', (e) => {
-            e.currentTarget.closest('.email-item').remove();
-        });
+        // Get the email value from the first input
+        const currentEmail = emailInputs.length > 0 ? emailInputs[0].value.trim() : '';
+
+        if (currentEmail && !this.savedEmails.includes(currentEmail)) {
+            // Add to saved emails list
+            this.savedEmails.push(currentEmail);
+            this.renderSavedEmails();
+
+            // Clear the input field
+            emailInputs[0].value = '';
+        }
     }
 
     async saveContact() {
         const firstName = document.getElementById('firstName').value.trim();
         const lastName = document.getElementById('lastName').value.trim();
         const emailInputs = document.querySelectorAll('.email-input');
-        const emails = Array.from(emailInputs)
+        const inputEmail = Array.from(emailInputs)
             .map(input => input.value.trim())
-            .filter(email => email.length > 0);
+            .filter(email => email.length > 0)[0];
+
+        // Combine saved emails with any email in the input field
+        const allEmails = [...this.savedEmails];
+        if (inputEmail && !allEmails.includes(inputEmail)) {
+            allEmails.push(inputEmail);
+        }
 
         if (!firstName || !lastName) {
             alert('First name and last name are required');
             return;
         }
 
-        if (emails.length === 0) {
+        if (allEmails.length === 0) {
             alert('At least one email is required');
             return;
         }
 
         const name = this.formatName(firstName, lastName);
-        const primaryEmail = emails[0];
         const contactData = {
             name: name,
-            email: primaryEmail,
+            email: allEmails[0], // Primary email for backward compatibility
+            emails: allEmails,   // Array of all emails
             phone: '', // Keep for backward compatibility
             address: '' // Keep for backward compatibility
         };
@@ -225,6 +267,9 @@ class AddressBook {
             }
 
             const contact = await response.json();
+
+            // Update saved emails for the contact
+            this.savedEmails = allEmails;
 
             // Reload contacts
             await this.loadContacts();

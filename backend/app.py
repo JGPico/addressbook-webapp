@@ -7,6 +7,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 import os
+import json
 from datetime import datetime
 
 app = Flask(__name__)
@@ -19,11 +20,15 @@ def get_db_connection():
     """Get database connection"""
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row  # This enables column access by name
+    # Enable foreign key constraints
+    conn.execute('PRAGMA foreign_keys = ON')
     return conn
 
 def init_db():
-    """Initialize the database with contacts table"""
+    """Initialize the database with contacts and emails tables"""
     conn = get_db_connection()
+    
+    # Create contacts table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS contacts (
             id TEXT PRIMARY KEY,
@@ -33,6 +38,23 @@ def init_db():
             address TEXT DEFAULT ''
         )
     ''')
+    
+    # Create emails table for multiple emails per contact
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS contact_emails (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            contact_id TEXT NOT NULL,
+            email TEXT NOT NULL,
+            FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
+        )
+    ''')
+    
+    # Create index for faster lookups
+    conn.execute('''
+        CREATE INDEX IF NOT EXISTS idx_contact_emails_contact_id 
+        ON contact_emails(contact_id)
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -40,120 +62,184 @@ def generate_id():
     """Generate a unique ID for a contact"""
     return str(int(datetime.now().timestamp() * 1000))
 
-def contact_to_dict(row):
-    """Convert database row to dictionary"""
+def get_contact_emails(conn, contact_id):
+    """Get all emails for a contact"""
+    rows = conn.execute(
+        'SELECT email FROM contact_emails WHERE contact_id = ? ORDER BY id',
+        (contact_id,)
+    ).fetchall()
+    return [row['email'] for row in rows]
+
+def contact_to_dict(row, conn=None):
+    """Convert database row to dictionary with emails"""
+    contact_id = row['id']
+    emails = []
+    
+    # If connection provided, fetch emails
+    if conn:
+        emails = get_contact_emails(conn, contact_id)
+    
+    # If no emails found but email field exists, use it as primary email
+    # Access row columns directly (sqlite3.Row supports bracket notation)
+    row_email = row['email'] if row['email'] else ''
+    if not emails and row_email:
+        emails = [row_email]
+    
     return {
-        'id': row['id'],
+        'id': contact_id,
         'name': row['name'],
-        'email': row['email'],
-        'phone': row['phone'],
-        'address': row['address'] or ''
+        'email': emails[0] if emails else row_email,
+        'emails': emails,
+        'phone': row['phone'] if row['phone'] else '',
+        'address': row['address'] if row['address'] else ''
     }
 
 @app.route('/api/contacts', methods=['GET'])
 def get_contacts():
-    """Get all contacts"""
+    """Get all contacts with their emails"""
     conn = get_db_connection()
     rows = conn.execute('SELECT * FROM contacts ORDER BY name').fetchall()
+    contacts = [contact_to_dict(row, conn) for row in rows]
     conn.close()
-    
-    contacts = [contact_to_dict(row) for row in rows]
     return jsonify(contacts), 200
 
 @app.route('/api/contacts', methods=['POST'])
 def create_contact():
-    """Create a new contact"""
+    """Create a new contact with emails array"""
     data = request.get_json()
     
     # Validate required fields
-    if not data or not data.get('name') or not data.get('email'):
-        return jsonify({'error': 'Missing required fields: name, email'}), 400
+    if not data or not data.get('name'):
+        return jsonify({'error': 'Missing required field: name'}), 400
+    
+    # Get emails array (required)
+    emails = data.get('emails', [])
+    
+    # Support backward compatibility: if emails not provided, check for single email field
+    if not emails and data.get('email'):
+        emails = [data.get('email')]
+    
+    if not emails or len(emails) == 0:
+        return jsonify({'error': 'At least one email is required'}), 400
     
     contact_id = generate_id()
     name = data.get('name')
-    email = data.get('email')
+    primary_email = emails[0]  # Store first email in legacy email column for backward compatibility
     phone = data.get('phone', '')
     address = data.get('address', '')
     
     try:
         conn = get_db_connection()
+        
+        # Insert contact (keep email column for backward compatibility with existing data)
         conn.execute(
             'INSERT INTO contacts (id, name, email, phone, address) VALUES (?, ?, ?, ?, ?)',
-            (contact_id, name, email, phone, address)
+            (contact_id, name, primary_email, phone, address)
         )
+        
+        # Insert all emails into contact_emails table
+        for email in emails:
+            conn.execute(
+                'INSERT INTO contact_emails (contact_id, email) VALUES (?, ?)',
+                (contact_id, email)
+            )
+        
         conn.commit()
+        contact = contact_to_dict(conn.execute('SELECT * FROM contacts WHERE id = ?', (contact_id,)).fetchone(), conn)
         conn.close()
         
-        contact = {
-            'id': contact_id,
-            'name': name,
-            'email': email,
-            'phone': phone,
-            'address': address
-        }
-        
         return jsonify(contact), 201
-    except sqlite3.IntegrityError:
-        return jsonify({'error': 'Contact ID already exists'}), 400
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': f'Database integrity error: {str(e)}'}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': f'Error creating contact: {str(e)}'}), 500
 
 @app.route('/api/contacts/<contact_id>', methods=['PUT'])
 def update_contact(contact_id):
-    """Update an existing contact"""
+    """Update an existing contact with emails array"""
     data = request.get_json()
     
     # Validate required fields
-    if not data or not data.get('name') or not data.get('email'):
-        return jsonify({'error': 'Missing required fields: name, email'}), 400
+    if not data or not data.get('name'):
+        return jsonify({'error': 'Missing required field: name'}), 400
+    
+    # Get emails array (required)
+    emails = data.get('emails', [])
+    
+    # Support backward compatibility: if emails not provided, check for single email field
+    if not emails and data.get('email'):
+        emails = [data.get('email')]
+    
+    if not emails or len(emails) == 0:
+        return jsonify({'error': 'At least one email is required'}), 400
     
     name = data.get('name')
-    email = data.get('email')
+    primary_email = emails[0]  # Store first email in legacy email column for backward compatibility
     phone = data.get('phone', '')
     address = data.get('address', '')
     
     try:
         conn = get_db_connection()
-        cursor = conn.execute(
-            'UPDATE contacts SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?',
-            (name, email, phone, address, contact_id)
-        )
-        updated_count = cursor.rowcount
-        conn.commit()
-        conn.close()
         
-        if updated_count == 0:
+        # Check if contact exists
+        existing = conn.execute('SELECT id FROM contacts WHERE id = ?', (contact_id,)).fetchone()
+        if not existing:
+            conn.close()
             return jsonify({'error': 'Contact not found'}), 404
         
-        contact = {
-            'id': contact_id,
-            'name': name,
-            'email': email,
-            'phone': phone,
-            'address': address
-        }
+        # Update contact (keep email column for backward compatibility)
+        conn.execute(
+            'UPDATE contacts SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?',
+            (name, primary_email, phone, address, contact_id)
+        )
+        
+        # Delete existing emails and insert new ones
+        conn.execute('DELETE FROM contact_emails WHERE contact_id = ?', (contact_id,))
+        for email in emails:
+            conn.execute(
+                'INSERT INTO contact_emails (contact_id, email) VALUES (?, ?)',
+                (contact_id, email)
+            )
+        
+        conn.commit()
+        contact = contact_to_dict(conn.execute('SELECT * FROM contacts WHERE id = ?', (contact_id,)).fetchone(), conn)
+        conn.close()
         
         return jsonify(contact), 200
+    except sqlite3.IntegrityError as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': f'Database integrity error: {str(e)}'}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        conn.rollback()
+        conn.close()
+        return jsonify({'error': f'Error updating contact: {str(e)}'}), 500
 
 @app.route('/api/contacts/<contact_id>', methods=['DELETE'])
 def delete_contact(contact_id):
-    """Delete a contact by ID"""
+    """Delete a contact by ID (emails will be cascade deleted)"""
     conn = get_db_connection()
-    cursor = conn.execute('DELETE FROM contacts WHERE id = ?', (contact_id,))
-    deleted_count = cursor.rowcount
+    
+    # Check if contact exists
+    existing = conn.execute('SELECT id FROM contacts WHERE id = ?', (contact_id,)).fetchone()
+    if not existing:
+        conn.close()
+        return jsonify({'error': 'Contact not found'}), 404
+    
+    # Delete contact (emails will be cascade deleted due to FOREIGN KEY constraint)
+    conn.execute('DELETE FROM contacts WHERE id = ?', (contact_id,))
     conn.commit()
     conn.close()
-    
-    if deleted_count == 0:
-        return jsonify({'error': 'Contact not found'}), 404
     
     return jsonify({'message': 'Contact deleted successfully'}), 200
 
 @app.route('/api/contacts/search', methods=['GET'])
 def search_contacts():
-    """Search contacts by query string"""
+    """Search contacts by query string (including emails)"""
     query = request.args.get('q', '').strip()
     
     if not query:
@@ -162,17 +248,21 @@ def search_contacts():
     # Use SQL LIKE for case-insensitive search
     search_pattern = f'%{query}%'
     conn = get_db_connection()
-    rows = conn.execute('''
-        SELECT * FROM contacts 
-        WHERE LOWER(name) LIKE LOWER(?) 
-           OR LOWER(email) LIKE LOWER(?) 
-           OR phone LIKE ? 
-           OR LOWER(address) LIKE LOWER(?)
-        ORDER BY name
-    ''', (search_pattern, search_pattern, search_pattern, search_pattern)).fetchall()
-    conn.close()
     
-    contacts = [contact_to_dict(row) for row in rows]
+    # Search in contacts and also match contacts that have emails matching the query
+    rows = conn.execute('''
+        SELECT DISTINCT c.* FROM contacts c
+        LEFT JOIN contact_emails ce ON c.id = ce.contact_id
+        WHERE LOWER(c.name) LIKE LOWER(?) 
+           OR LOWER(c.email) LIKE LOWER(?) 
+           OR c.phone LIKE ? 
+           OR LOWER(c.address) LIKE LOWER(?)
+           OR LOWER(ce.email) LIKE LOWER(?)
+        ORDER BY c.name
+    ''', (search_pattern, search_pattern, search_pattern, search_pattern, search_pattern)).fetchall()
+    
+    contacts = [contact_to_dict(row, conn) for row in rows]
+    conn.close()
     return jsonify(contacts), 200
 
 @app.route('/api/health', methods=['GET'])

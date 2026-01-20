@@ -131,8 +131,33 @@ section h2 {
     border-color: #667eea;
 }
 
-.email-list {
+.saved-emails-list {
+    margin-bottom: 16px;
+}
+
+.saved-email-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
+    padding: 8px 0;
+}
+
+.saved-email-text {
+    flex: 1;
+    color: #333;
+    font-size: 1rem;
+}
+
+.email-entry-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.email-list {
+    flex: 1;
+    margin-bottom: 0;
 }
 
 .email-item {
@@ -175,6 +200,27 @@ section h2 {
 }
 
 .btn-remove-email:hover {
+    background: #c0392b;
+}
+
+.btn-remove-email-input {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #e74c3c;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+}
+
+.btn-remove-email-input:hover {
     background: #c0392b;
 }
 
