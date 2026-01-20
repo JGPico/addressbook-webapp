@@ -55,11 +55,20 @@ class AddressBook {
             this.emailManager.toggleEmailEntryForm();
         });
 
-        // Allow Enter key to add email
+        // Allow Enter key in email input to save contact
         document.addEventListener('keypress', (e) => {
             if (e.target.classList.contains('email-input') && e.key === 'Enter') {
                 e.preventDefault();
-                this.emailManager.toggleEmailEntryForm();
+                // If email form is visible, save the contact
+                const emailList = document.getElementById('email-list');
+                if (emailList.classList.contains('visible')) {
+                    // First add the email if there's a value, then save
+                    this.emailManager.addEmailFromInput();
+                    this.saveContact();
+                } else {
+                    // If form is not visible, toggle it to show
+                    this.emailManager.toggleEmailEntryForm();
+                }
             }
         });
     }
