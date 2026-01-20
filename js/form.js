@@ -79,12 +79,7 @@ class ContactFormManager {
             };
         }
 
-        if (formData.emails.length === 0) {
-            return {
-                isValid: false,
-                error: 'At least one email is required'
-            };
-        }
+        // Email is optional - no validation needed for emails
 
         return { isValid: true };
     }
@@ -96,10 +91,12 @@ class ContactFormManager {
      */
     prepareContactData(formData) {
         const name = formatName(formData.firstName, formData.lastName);
+        // Use first email if available, otherwise empty string
+        const primaryEmail = formData.emails.length > 0 ? formData.emails[0] : '';
         return {
             name: name,
-            email: formData.emails[0], // Primary email for backward compatibility
-            emails: formData.emails,   // Array of all emails
+            email: primaryEmail, // Primary email for backward compatibility (empty if no emails)
+            emails: formData.emails,   // Array of all emails (can be empty)
             phone: '', // Keep for backward compatibility
             address: '' // Keep for backward compatibility
         };

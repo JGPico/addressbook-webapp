@@ -74,13 +74,13 @@ class AddressBook {
     }
 
     cancelEdit() {
-        const selectedId = this.contactListManager.getSelectedContactId();
-        if (selectedId) {
-            const contact = this.contactListManager.getContactById(selectedId);
-            this.formManager.renderContactForm(contact);
-        } else {
-            this.formManager.renderContactForm(null);
-        }
+        // Clear everything in one action
+        // Set selected contact ID to null first (without re-rendering)
+        this.contactListManager.setSelectedContact(null);
+        // Clear the form and emails (this also calls resetEmailForm internally)
+        this.formManager.renderContactForm(null);
+        // Update the contacts list display to remove selection highlight
+        this.contactListManager.renderContacts();
     }
 
     async loadContacts() {

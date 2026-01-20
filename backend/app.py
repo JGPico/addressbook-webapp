@@ -33,8 +33,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS contacts (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            phone TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            phone TEXT DEFAULT '',
             address TEXT DEFAULT ''
         )
     ''')
@@ -112,19 +112,18 @@ def create_contact():
     if not data or not data.get('name'):
         return jsonify({'error': 'Missing required field: name'}), 400
     
-    # Get emails array (required)
+    # Get emails array (optional)
     emails = data.get('emails', [])
     
     # Support backward compatibility: if emails not provided, check for single email field
     if not emails and data.get('email'):
         emails = [data.get('email')]
     
-    if not emails or len(emails) == 0:
-        return jsonify({'error': 'At least one email is required'}), 400
+    # Email is optional - no validation needed
     
     contact_id = generate_id()
     name = data.get('name')
-    primary_email = emails[0]  # Store first email in legacy email column for backward compatibility
+    primary_email = emails[0] if emails else ''  # Store first email or empty string
     phone = data.get('phone', '')
     address = data.get('address', '')
     
@@ -167,18 +166,17 @@ def update_contact(contact_id):
     if not data or not data.get('name'):
         return jsonify({'error': 'Missing required field: name'}), 400
     
-    # Get emails array (required)
+    # Get emails array (optional)
     emails = data.get('emails', [])
     
     # Support backward compatibility: if emails not provided, check for single email field
     if not emails and data.get('email'):
         emails = [data.get('email')]
     
-    if not emails or len(emails) == 0:
-        return jsonify({'error': 'At least one email is required'}), 400
+    # Email is optional - no validation needed
     
     name = data.get('name')
-    primary_email = emails[0]  # Store first email in legacy email column for backward compatibility
+    primary_email = emails[0] if emails else ''  # Store first email or empty string
     phone = data.get('phone', '')
     address = data.get('address', '')
     

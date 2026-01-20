@@ -95,9 +95,12 @@ class ContactListManager {
 
     /**
      * Clear the selection
+     * @param {boolean} skipRender - Skip re-rendering contacts list
      */
-    clearSelection() {
+    clearSelection(skipRender = false) {
         this.selectedContactId = null;
-        this.renderContacts();
+        if (!skipRender) {
+            this.renderContacts();
+        }
     }
 }

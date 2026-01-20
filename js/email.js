@@ -81,7 +81,7 @@ class EmailManager {
         const emailId = `email-${index}`;
         return `
             <div class="email-item">
-                <input type="email" id="${emailId}" name="email" value="${escapeHtmlAttribute(email)}" class="email-input" placeholder="Enter email" autocomplete="email" required>
+                <input type="email" id="${emailId}" name="email" value="${escapeHtmlAttribute(email)}" class="email-input" placeholder="Enter email" autocomplete="email">
                 ${index > 0 ? `<button type="button" class="btn-remove-email-input" data-index="${index}"><i class="fa-solid fa-minus"></i></button>` : ''}
             </div>
         `;
