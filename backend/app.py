@@ -268,7 +268,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy'}), 200
 
-@app.route('/', methods=['GET'])
+@app.route('/api/', methods=['GET'])
 def root():
     """Root endpoint"""
     return jsonify({'message': 'Address Book API is running'}), 200
