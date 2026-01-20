@@ -5,8 +5,26 @@
     height: 100%;
 }
 
+.contact-form-section form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-content: start;
+}
+
 .form-group {
     margin-bottom: 24px;
+}
+
+/* Email form group spans both columns */
+.form-group:has(#saved-emails-list),
+.form-group:has(#email-list) {
+    grid-column: 1 / -1;
+}
+
+/* Form actions span both columns */
+.form-actions {
+    grid-column: 1 / -1;
 }
 
 .form-group label {
