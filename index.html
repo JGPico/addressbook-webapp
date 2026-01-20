@@ -13,19 +13,12 @@
 
 <body>
     <div class="container">
-        <header>
-            <h1>Address Book</h1>
-        </header>
-
         <main>
-
             <section class="contacts-section">
                 <div class="contacts-title-button-wrapper">
                     <h2>Contacts</h2>
-                    <button type="submit" class="btn-add-contact btn-primary"><i class="fa-solid fa-plus"></i></button>
-                </div>
-                <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search contacts...">
+                    <button type="button" class="btn-add-contact btn-primary" id="add-contact-btn"><i
+                            class="fa-solid fa-plus"></i></button>
                 </div>
                 <div id="contacts-list" class="contacts-list">
                     <!-- Contacts will be dynamically inserted here -->
@@ -33,27 +26,30 @@
             </section>
 
             <section class="contact-form-section">
-                <h2>Add New Contact</h2>
                 <form id="contact-form">
                     <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" name="name" required>
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" required>
                     </div>
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" required>
                     </div>
                     <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input type="tel" id="phone" name="phone" required>
+                        <label>Email</label>
+                        <div id="email-list" class="email-list">
+                            <!-- Email inputs will be dynamically inserted here -->
+                        </div>
+                        <button type="button" class="btn-add-email" id="add-email-btn"><i
+                                class="fa-solid fa-plus"></i></button>
                     </div>
-                    <div class="form-group">
-                        <label for="address">Address</label>
-                        <textarea id="address" name="address" rows="3"></textarea>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-danger" id="delete-btn">Delete</button>
+                        <button type="button" class="btn btn-cancel" id="cancel-btn">Cancel</button>
+                        <button type="submit" class="btn btn-save">Save</button>
                     </div>
                 </form>
             </section>
-
         </main>
     </div>
 

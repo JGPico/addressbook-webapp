@@ -66,13 +66,13 @@ def create_contact():
     data = request.get_json()
     
     # Validate required fields
-    if not data or not data.get('name') or not data.get('email') or not data.get('phone'):
-        return jsonify({'error': 'Missing required fields: name, email, phone'}), 400
+    if not data or not data.get('name') or not data.get('email'):
+        return jsonify({'error': 'Missing required fields: name, email'}), 400
     
     contact_id = generate_id()
     name = data.get('name')
     email = data.get('email')
-    phone = data.get('phone')
+    phone = data.get('phone', '')
     address = data.get('address', '')
     
     try:
@@ -95,6 +95,45 @@ def create_contact():
         return jsonify(contact), 201
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Contact ID already exists'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts/<contact_id>', methods=['PUT'])
+def update_contact(contact_id):
+    """Update an existing contact"""
+    data = request.get_json()
+    
+    # Validate required fields
+    if not data or not data.get('name') or not data.get('email'):
+        return jsonify({'error': 'Missing required fields: name, email'}), 400
+    
+    name = data.get('name')
+    email = data.get('email')
+    phone = data.get('phone', '')
+    address = data.get('address', '')
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.execute(
+            'UPDATE contacts SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?',
+            (name, email, phone, address, contact_id)
+        )
+        updated_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if updated_count == 0:
+            return jsonify({'error': 'Contact not found'}), 404
+        
+        contact = {
+            'id': contact_id,
+            'name': name,
+            'email': email,
+            'phone': phone,
+            'address': address
+        }
+        
+        return jsonify(contact), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
