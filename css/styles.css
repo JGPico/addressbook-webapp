@@ -149,15 +149,15 @@ section h2 {
     font-size: 1rem;
 }
 
-.email-entry-form {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.email-list {
+    display: none;
+    /* Hidden by default */
+    margin-bottom: 0;
+    margin-top: 8px;
 }
 
-.email-list {
-    flex: 1;
-    margin-bottom: 0;
+.email-list.visible {
+    display: block;
 }
 
 .email-item {
@@ -175,6 +175,19 @@ section h2 {
     font-size: 1rem;
     transition: border-color 0.3s;
     font-family: inherit;
+}
+
+.add-email-btn-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.add-email-btn-wrapper p {
+    font-size: 1rem;
+    color: #3019ff;
+    margin: 0;
 }
 
 .email-input:focus {

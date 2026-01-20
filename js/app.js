@@ -13,6 +13,11 @@ class AddressBook {
         this.renderContacts();
         this.renderContactForm(null); // Initialize empty form
         this.setupEventListeners();
+        // Ensure email list is hidden on init
+        const emailList = document.getElementById('email-list');
+        if (emailList) {
+            emailList.classList.remove('visible');
+        }
     }
 
     setupEventListeners() {
@@ -42,9 +47,9 @@ class AddressBook {
             }
         });
 
-        // Add email button
+        // Add email button - show/hide email entry form
         document.getElementById('add-email-btn').addEventListener('click', () => {
-            this.addEmailToSaved();
+            this.toggleEmailEntryForm();
         });
 
         // Allow Enter key to add email
@@ -140,8 +145,15 @@ class AddressBook {
                 : (contact.email ? [contact.email] : []);
             this.renderSavedEmails();
 
-            // Render empty email input form
+            // Hide email entry form and clear it
+            emailList.classList.remove('visible');
             emailList.innerHTML = this.createEmailField('', 0);
+            // Reset icon to plus
+            const addEmailBtn = document.getElementById('add-email-btn');
+            const icon = addEmailBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'fa-solid fa-plus';
+            }
 
             deleteBtn.style.display = 'inline-block';
         } else {
@@ -149,8 +161,46 @@ class AddressBook {
             lastNameInput.value = '';
             this.savedEmails = [];
             this.renderSavedEmails();
+            emailList.classList.remove('visible');
             emailList.innerHTML = this.createEmailField('', 0);
+            // Reset icon to plus
+            const addEmailBtn = document.getElementById('add-email-btn');
+            const icon = addEmailBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'fa-solid fa-plus';
+            }
             deleteBtn.style.display = 'none';
+        }
+    }
+
+    toggleEmailEntryForm() {
+        const emailList = document.getElementById('email-list');
+        const addEmailBtn = document.getElementById('add-email-btn');
+        const icon = addEmailBtn.querySelector('i');
+
+        if (emailList.classList.contains('visible')) {
+            // If form is visible, add the email and hide the form
+            this.addEmailToSaved();
+            emailList.classList.remove('visible');
+            // Change icon back to plus
+            icon.className = 'fa-solid fa-plus';
+            // Clear the input
+            const emailInput = emailList.querySelector('.email-input');
+            if (emailInput) {
+                emailInput.value = '';
+            }
+        } else {
+            // Show the form
+            emailList.classList.add('visible');
+            // Change icon to minimize
+            icon.className = 'fa-solid fa-minimize';
+            // Focus on the input field
+            setTimeout(() => {
+                const emailInput = emailList.querySelector('.email-input');
+                if (emailInput) {
+                    emailInput.focus();
+                }
+            }, 100);
         }
     }
 
