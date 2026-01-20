@@ -13,7 +13,7 @@
 
 .saved-email-text {
     flex: 1;
-    color: #333;
+    color: var(--text-color);
     font-size: 1rem;
 }
 
@@ -38,7 +38,7 @@
 .email-input {
     flex: 1;
     padding: 10px 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
     transition: border-color 0.3s;
@@ -47,7 +47,7 @@
 
 .email-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--primary-color);
 }
 
 .add-email-btn-wrapper {

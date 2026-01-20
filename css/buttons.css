@@ -1,8 +1,8 @@
 /* Button styles */
 .btn {
-    padding: 10px 20px;
+    padding: 4px 16px;
     border: none;
-    border-radius: 4px;
+    border-radius: 0px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -21,8 +21,8 @@
 
 .btn-cancel {
     background: white;
-    color: #667eea;
-    border: 1px solid #667eea;
+    /* color: var(--primary-color); */
+    border: 1px solid var(--primary-color);
 }
 
 .btn-cancel:hover {
@@ -30,13 +30,13 @@
 }
 
 .btn-save {
-    background: #667eea;
+    background: var(--primary-color);
     color: white;
     margin-left: auto;
 }
 
 .btn-save:hover {
-    background: #5568d3;
+    background: var(--secondary-color);
 }
 
 .btn-add-circle {
@@ -66,12 +66,12 @@
 }
 
 .btn-primary {
-    background: #667eea;
+    background: var(--primary-color);
     color: white;
 }
 
 .btn-primary:hover {
-    background: #5568d3;
+    background: var(--secondary-color);
 }
 
 .btn-remove-email {
