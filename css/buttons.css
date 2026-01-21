@@ -23,6 +23,7 @@
     background: white;
     /* color: var(--primary-color); */
     border: 1px solid var(--primary-color);
+    margin-left: auto;
 }
 
 .btn-cancel:hover {
@@ -32,7 +33,6 @@
 .btn-save {
     background: var(--primary-color);
     color: white;
-    margin-left: auto;
 }
 
 .btn-save:hover {
