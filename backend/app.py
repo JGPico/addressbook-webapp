@@ -273,8 +273,9 @@ def root():
     """Root endpoint"""
     return jsonify({'message': 'Address Book API is running'}), 200
 
+# Initialize database when module is imported (works for both direct execution and gunicorn)
+# This ensures the database is initialized regardless of how the app is run
+init_db()
+
 if __name__ == '__main__':
-    # Initialize database on startup
-    init_db()
-    
     app.run(debug=True, host='0.0.0.0', port=5000)
