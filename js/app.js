@@ -62,7 +62,7 @@ class AddressBook {
             if (e.target.classList.contains('email-input') && e.key === 'Enter') {
                 e.preventDefault();
                 // If email form is visible, save the contact
-                const emailList = document.getElementById('email-list');
+                const emailList = document.getElementById('email-form');
                 if (emailList.classList.contains('visible')) {
                     // First add the email if there's a value, then save
                     this.emailManager.addEmailFromInput();

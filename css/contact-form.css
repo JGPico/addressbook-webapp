@@ -18,7 +18,7 @@
 
 /* Email form group spans both columns */
 .form-group:has(#saved-emails-list),
-.form-group:has(#email-list) {
+.form-group:has(#email-form) {
     grid-column: 1 / -1;
 }
 

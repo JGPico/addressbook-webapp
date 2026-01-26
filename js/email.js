@@ -91,7 +91,7 @@ class EmailManager {
      * Toggle email entry form visibility
      */
     toggleEmailEntryForm() {
-        const emailList = document.getElementById('email-list');
+        const emailList = document.getElementById('email-form');
         const addEmailBtn = document.getElementById('add-email-btn');
         const icon = addEmailBtn.querySelector('i');
 
@@ -142,7 +142,7 @@ class EmailManager {
      * @returns {boolean} True if an email was added (and form can close), false if invalid/empty (form stays open)
      */
     addEmailFromInput() {
-        const emailList = document.getElementById('email-list');
+        const emailList = document.getElementById('email-form');
         const emailInputs = emailList.querySelectorAll('.email-input');
 
         const currentEmail = emailInputs.length > 0 ? emailInputs[0].value.trim() : '';
@@ -166,7 +166,7 @@ class EmailManager {
      * Initialize email list (hide by default)
      */
     initEmailList() {
-        const emailList = document.getElementById('email-list');
+        const emailList = document.getElementById('email-form');
         if (emailList) {
             emailList.classList.remove('visible');
             emailList.innerHTML = this.createEmailField('', 0);
@@ -177,7 +177,7 @@ class EmailManager {
      * Reset email form (hide and clear)
      */
     resetEmailForm() {
-        const emailList = document.getElementById('email-list');
+        const emailList = document.getElementById('email-form');
         const addEmailBtn = document.getElementById('add-email-btn');
         const icon = addEmailBtn.querySelector('i');
 

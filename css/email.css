@@ -17,14 +17,14 @@
     font-size: 1rem;
 }
 
-.email-list {
+.email-form {
     display: none;
     /* Hidden by default */
     margin-bottom: 0;
     margin-top: 8px;
 }
 
-.email-list.visible {
+.email-form.visible {
     display: block;
 }
 
@@ -57,7 +57,7 @@
     margin-top: 8px;
 }
 
-.add-email-btn-wrapper p {
+.add-email-btn-wrapper label {
     font-size: 1rem;
     color: #3019ff;
     margin: 0;
