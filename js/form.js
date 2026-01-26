@@ -79,7 +79,16 @@ class ContactFormManager {
             };
         }
 
-        // Email is optional - no validation needed for emails
+        if (formData.emails && formData.emails.length > 0) {
+            for (const email of formData.emails) {
+                if (!isValidEmail(email)) {
+                    return {
+                        isValid: false,
+                        error: 'All emails must be valid (e.g. name@example.com).'
+                    };
+                }
+            }
+        }
 
         return { isValid: true };
     }
