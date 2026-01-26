@@ -51,6 +51,18 @@
     border-color: var(--primary-color);
 }
 
+.form-inline-error {
+    grid-column: 1 / -1;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: #c00;
+    display: none;
+}
+
+.form-inline-error.visible {
+    display: block;
+}
+
 .form-actions {
     display: flex;
     gap: 12px;

@@ -62,3 +62,14 @@
     color: #3019ff;
     margin: 0;
 }
+
+.email-inline-error {
+    margin-top: 6px;
+    font-size: 0.875rem;
+    color: #c00;
+    display: none;
+}
+
+.email-inline-error.visible {
+    display: block;
+}

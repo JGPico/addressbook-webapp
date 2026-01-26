@@ -81,7 +81,7 @@ class EmailManager {
         const emailId = `email-${index}`;
         return `
             <div class="email-item">
-                <input type="email" id="${emailId}" name="email" value="${escapeHtmlAttribute(email)}" class="email-input" placeholder="Enter email" autocomplete="email">
+                <input type="email" id="${emailId}" name="email" value="${escapeHtmlAttribute(email)}" class="email-input" placeholder="Enter email" autocomplete="email" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Please enter a valid email address (e.g., name@example.com)">
                 ${index > 0 ? `<button type="button" class="btn-remove-email-input" data-index="${index}"><i class="fa-solid fa-minus"></i></button>` : ''}
             </div>
         `;
@@ -96,17 +96,15 @@ class EmailManager {
         const icon = addEmailBtn.querySelector('i');
 
         if (emailList.classList.contains('visible')) {
-            // If form is visible, add the email and hide the form
-            this.addEmailFromInput();
+            // If form is visible, add the email only when valid; hide form only when add succeeded
+            if (!this.addEmailFromInput()) return;
             emailList.classList.remove('visible');
-            // Change icon back to plus
             icon.className = 'fa-solid fa-plus';
         } else {
             // Show the form
+            this.clearEmailError();
             emailList.classList.add('visible');
-            // Change icon to minimize
             icon.className = 'fa-solid fa-minimize';
-            // Focus on the input field
             setTimeout(() => {
                 const emailInput = emailList.querySelector('.email-input');
                 if (emailInput) {
@@ -117,20 +115,51 @@ class EmailManager {
     }
 
     /**
-     * Add email from input field to saved emails
+     * Show an error message near the email input
+     * @param {string} message - Error message text
+     */
+    showEmailError(message) {
+        const el = document.getElementById('email-error');
+        if (el) {
+            el.textContent = message;
+            el.classList.add('visible');
+        }
+    }
+
+    /**
+     * Clear the email inline error message
+     */
+    clearEmailError() {
+        const el = document.getElementById('email-error');
+        if (el) {
+            el.textContent = '';
+            el.classList.remove('visible');
+        }
+    }
+
+    /**
+     * Add email from input field to saved emails.
+     * @returns {boolean} True if an email was added (and form can close), false if invalid/empty (form stays open)
      */
     addEmailFromInput() {
         const emailList = document.getElementById('email-list');
         const emailInputs = emailList.querySelectorAll('.email-input');
 
-        // Get the email value from the first input
         const currentEmail = emailInputs.length > 0 ? emailInputs[0].value.trim() : '';
-
-        if (currentEmail) {
-            this.addEmail(currentEmail);
-            // Clear the input field
-            emailInputs[0].value = '';
+        if (!currentEmail) {
+            this.clearEmailError();
+            return false;
         }
+
+        if (!isValidEmail(currentEmail)) {
+            this.showEmailError('Please enter a valid email address (e.g. name@example.com).');
+            return false;
+        }
+
+        this.clearEmailError();
+        this.addEmail(currentEmail);
+        emailInputs[0].value = '';
+        return true;
     }
 
     /**
@@ -152,10 +181,10 @@ class EmailManager {
         const addEmailBtn = document.getElementById('add-email-btn');
         const icon = addEmailBtn.querySelector('i');
 
+        this.clearEmailError();
         emailList.classList.remove('visible');
         emailList.innerHTML = this.createEmailField('', 0);
-        
-        // Reset icon to plus
+
         if (icon) {
             icon.className = 'fa-solid fa-plus';
         }
