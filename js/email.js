@@ -91,22 +91,23 @@ class EmailManager {
      * Toggle email entry form visibility
      */
     toggleEmailEntryForm() {
-        const emailList = document.getElementById('email-form');
+        const emailForm = document.getElementById('email-form');
         const addEmailBtn = document.getElementById('add-email-btn');
         const icon = addEmailBtn.querySelector('i');
 
-        if (emailList.classList.contains('visible')) {
-            // If form is visible, add the email only when valid; hide form only when add succeeded
-            if (!this.addEmailFromInput()) return;
-            emailList.classList.remove('visible');
+        if (emailForm.classList.contains('visible')) {
+            // If form is visible, try to add when there's valid content; always close (minimize) on click
+            this.addEmailFromInput();
+            this.clearEmailError();
+            emailForm.classList.remove('visible');
             icon.className = 'fa-solid fa-plus';
         } else {
             // Show the form
             this.clearEmailError();
-            emailList.classList.add('visible');
+            emailForm.classList.add('visible');
             icon.className = 'fa-solid fa-minimize';
             setTimeout(() => {
-                const emailInput = emailList.querySelector('.email-input');
+                const emailInput = emailForm.querySelector('.email-input');
                 if (emailInput) {
                     emailInput.focus();
                 }
