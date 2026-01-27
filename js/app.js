@@ -62,7 +62,7 @@ class AddressBook {
             if (e.target.classList.contains('email-input') && e.key === 'Enter') {
                 e.preventDefault();
                 // If email form is visible, save the contact
-                const emailList = document.getElementById('email-list');
+                const emailList = document.getElementById('email-form');
                 if (emailList.classList.contains('visible')) {
                     // First add the email if there's a value, then save
                     this.emailManager.addEmailFromInput();
@@ -76,21 +76,20 @@ class AddressBook {
     }
 
     handleContactSelect(contact) {
+        this.clearValidationErrors();
         this.formManager.renderContactForm(contact);
     }
 
     newContact() {
         this.contactListManager.clearSelection();
+        this.clearValidationErrors();
         this.formManager.renderContactForm(null);
     }
 
     cancelEdit() {
-        // Clear everything in one action
-        // Set selected contact ID to null first (without re-rendering)
         this.contactListManager.setSelectedContact(null);
-        // Clear the form and emails (this also calls resetEmailForm internally)
+        this.clearValidationErrors();
         this.formManager.renderContactForm(null);
-        // Update the contacts list display to remove selection highlight
         this.contactListManager.renderContacts();
     }
 
@@ -104,12 +103,30 @@ class AddressBook {
         }
     }
 
+    clearValidationErrors() {
+        this.emailManager.clearEmailError();
+        const formEl = document.getElementById('form-validation-error');
+        if (formEl) {
+            formEl.textContent = '';
+            formEl.classList.remove('visible');
+        }
+    }
+
     async saveContact() {
         const formData = this.formManager.collectFormData();
         const validation = this.formManager.validateFormData(formData);
 
+        this.clearValidationErrors();
         if (!validation.isValid) {
-            alert(validation.error);
+            if (validation.error.includes('email') || validation.error.includes('valid')) {
+                this.emailManager.showEmailError(validation.error);
+            } else {
+                const formEl = document.getElementById('form-validation-error');
+                if (formEl) {
+                    formEl.textContent = validation.error;
+                    formEl.classList.add('visible');
+                }
+            }
             return;
         }
 
@@ -127,10 +144,9 @@ class AddressBook {
                 contact = await this.apiService.createContact(contactData);
             }
 
-            // Update saved emails for the contact
             this.emailManager.setSavedEmails(formData.emails);
+            this.clearValidationErrors();
 
-            // Reload contacts
             await this.loadContacts();
             this.contactListManager.selectContact(contact.id);
             this.contactListManager.renderContacts();

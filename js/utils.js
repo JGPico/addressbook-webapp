@@ -50,3 +50,16 @@ function parseName(name) {
 function formatName(firstName, lastName) {
     return `${firstName} ${lastName}`.trim();
 }
+
+/** Email pattern matching input[type=email] pattern attribute (RFC-style) */
+const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+/**
+ * Check if a string is a valid email address
+ * @param {string} email - Email string to validate
+ * @returns {boolean} True if valid
+ */
+function isValidEmail(email) {
+    if (typeof email !== 'string') return false;
+    return EMAIL_PATTERN.test(email.trim());
+}

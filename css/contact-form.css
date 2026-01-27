@@ -18,7 +18,7 @@
 
 /* Email form group spans both columns */
 .form-group:has(#saved-emails-list),
-.form-group:has(#email-list) {
+.form-group:has(#email-form) {
     grid-column: 1 / -1;
 }
 
@@ -49,6 +49,18 @@
 .form-group input:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+.form-inline-error {
+    grid-column: 1 / -1;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: #c00;
+    display: none;
+}
+
+.form-inline-error.visible {
+    display: block;
 }
 
 .form-actions {
