@@ -18,14 +18,59 @@ class AddressBook {
     }
 
     async init() {
+        this.setupEventListeners();
+        this.updateAuthGreeting();
         await this.loadContacts();
         this.contactListManager.renderContacts();
         this.formManager.renderContactForm(null);
         this.emailManager.initEmailList();
-        this.setupEventListeners();
+        this.updateAuthGreeting();
     }
 
     setupEventListeners() {
+        // Login button and dialog
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', () => openLoginDialog());
+        }
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value;
+                if (!username) {
+                    showLoginError('Please enter a username.');
+                    return;
+                }
+                if (!password) {
+                    showLoginError('Please enter a password.');
+                    return;
+                }
+                try {
+                    await this.apiService.login(username, password);
+                    closeLoginDialog();
+                    this.updateAuthGreeting();
+                    await this.loadContacts();
+                    this.contactListManager.renderContacts();
+                } catch (err) {
+                    showLoginError(err.message || 'Login failed.');
+                }
+            });
+        }
+        const loginCancelBtn = document.getElementById('login-cancel-btn');
+        if (loginCancelBtn) {
+            loginCancelBtn.addEventListener('click', () => closeLoginDialog());
+        }
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.apiService.setToken(null);
+                this.updateAuthGreeting();
+                this.loadContacts();
+            });
+        }
+
         // Add contact button
         document.getElementById('add-contact-btn').addEventListener('click', () => {
             this.newContact();
@@ -93,13 +138,25 @@ class AddressBook {
         this.contactListManager.renderContacts();
     }
 
+    updateAuthGreeting() {
+        const el = document.getElementById('auth-greeting');
+        if (!el) return;
+        const username = this.apiService.getUsername();
+        el.textContent = username ? `Hello ${username}` : 'Login to access contacts';
+    }
+
     async loadContacts() {
         try {
             const contacts = await this.apiService.loadContacts();
             this.contactListManager.setContacts(contacts);
         } catch (error) {
-            alert(`Error loading contacts: ${error.message}. Make sure the backend server is running.`);
             this.contactListManager.setContacts([]);
+            this.updateAuthGreeting();
+            if (error.status === 401) {
+                openLoginDialog();
+            } else {
+                alert(`Error loading contacts: ${error.message}. Make sure the backend server is running.`);
+            }
         }
     }
 
@@ -151,7 +208,11 @@ class AddressBook {
             this.contactListManager.selectContact(contact.id);
             this.contactListManager.renderContacts();
         } catch (error) {
-            alert(`Error saving contact: ${error.message}`);
+            if (error.status === 401) {
+                openLoginDialog();
+            } else {
+                alert(`Error saving contact: ${error.message}`);
+            }
             console.error('Error saving contact:', error);
         }
     }
@@ -164,7 +225,11 @@ class AddressBook {
             this.formManager.renderContactForm(null);
             this.contactListManager.renderContacts();
         } catch (error) {
-            alert(`Error deleting contact: ${error.message}`);
+            if (error.status === 401) {
+                openLoginDialog();
+            } else {
+                alert(`Error deleting contact: ${error.message}`);
+            }
             console.error('Error deleting contact:', error);
         }
     }

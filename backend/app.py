@@ -1,20 +1,25 @@
 """
 Flask REST API for Address Book Application
-Provides endpoints for managing contacts
+Provides endpoints for managing contacts and JWT authentication
 """
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug.security import check_password_hash, generate_password_hash
 import sqlite3
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import jwt
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
 # Database file path
 DB_FILE = 'addressbook.db'
+JWT_SECRET = os.environ.get('JWT_SECRET', 'dev-secret-change-in-production')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRY_HOURS = 24
 
 def get_db_connection():
     """Get database connection"""
@@ -25,9 +30,25 @@ def get_db_connection():
     return conn
 
 def init_db():
-    """Initialize the database with contacts and emails tables"""
+    """Initialize the database with contacts, emails, and users tables"""
     conn = get_db_connection()
-    
+
+    # Create users table for JWT auth
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL
+        )
+    ''')
+    # Seed default user if none exist (username: admin, password: admin)
+    default_user = conn.execute('SELECT id FROM users WHERE username = ?', ('admin',)).fetchone()
+    if not default_user:
+        conn.execute(
+            'INSERT INTO users (username, password_hash) VALUES (?, ?)',
+            ('admin', generate_password_hash('admin', method='pbkdf2:sha256'))
+        )
+
     # Create contacts table
     conn.execute('''
         CREATE TABLE IF NOT EXISTS contacts (
@@ -38,7 +59,7 @@ def init_db():
             address TEXT DEFAULT ''
         )
     ''')
-    
+
     # Create emails table for multiple emails per contact
     conn.execute('''
         CREATE TABLE IF NOT EXISTS contact_emails (
@@ -48,13 +69,13 @@ def init_db():
             FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE
         )
     ''')
-    
+
     # Create index for faster lookups
     conn.execute('''
-        CREATE INDEX IF NOT EXISTS idx_contact_emails_contact_id 
+        CREATE INDEX IF NOT EXISTS idx_contact_emails_contact_id
         ON contact_emails(contact_id)
     ''')
-    
+
     conn.commit()
     conn.close()
 
@@ -74,17 +95,17 @@ def contact_to_dict(row, conn=None):
     """Convert database row to dictionary with emails"""
     contact_id = row['id']
     emails = []
-    
+
     # If connection provided, fetch emails
     if conn:
         emails = get_contact_emails(conn, contact_id)
-    
+
     # If no emails found but email field exists, use it as primary email
     # Access row columns directly (sqlite3.Row supports bracket notation)
     row_email = row['email'] if row['email'] else ''
     if not emails and row_email:
         emails = [row_email]
-    
+
     return {
         'id': contact_id,
         'name': row['name'],
@@ -94,7 +115,51 @@ def contact_to_dict(row, conn=None):
         'address': row['address'] if row['address'] else ''
     }
 
+
+def require_jwt(f):
+    """Decorator that requires a valid JWT in Authorization: Bearer <token>."""
+    from functools import wraps
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        auth = request.headers.get('Authorization')
+        if not auth or not auth.startswith('Bearer '):
+            return jsonify({'error': 'Missing or invalid Authorization header'}), 401
+        token = auth[7:].strip()
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            request.current_user = payload.get('sub')
+            return f(*args, **kwargs)
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid or expired token'}), 401
+    return wrapped
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Authenticate username/password and return a JWT."""
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    if not username:
+        return jsonify({'error': 'Please enter a username.'}), 400
+    if not password:
+        return jsonify({'error': 'Please enter a password.'}), 400
+    conn = get_db_connection()
+    row = conn.execute('SELECT id, password_hash FROM users WHERE username = ?', (username,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({'error': 'Username not found.'}), 401
+    if not check_password_hash(row['password_hash'], password):
+        return jsonify({'error': 'Incorrect password.'}), 401
+    expiry = datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS)
+    payload = {'sub': username, 'exp': expiry, 'iat': datetime.utcnow()}
+    raw = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token = raw.decode('utf-8') if isinstance(raw, bytes) else raw
+    return jsonify({'token': token, 'username': username})
+
+
 @app.route('/api/contacts', methods=['GET'])
+@require_jwt
 def get_contacts():
     """Get all contacts with their emails"""
     conn = get_db_connection()
@@ -104,6 +169,7 @@ def get_contacts():
     return jsonify(contacts), 200
 
 @app.route('/api/contacts', methods=['POST'])
+@require_jwt
 def create_contact():
     """Create a new contact with emails array"""
     data = request.get_json()
@@ -158,6 +224,7 @@ def create_contact():
         return jsonify({'error': f'Error creating contact: {str(e)}'}), 500
 
 @app.route('/api/contacts/<contact_id>', methods=['PUT'])
+@require_jwt
 def update_contact(contact_id):
     """Update an existing contact with emails array"""
     data = request.get_json()
@@ -218,6 +285,7 @@ def update_contact(contact_id):
         return jsonify({'error': f'Error updating contact: {str(e)}'}), 500
 
 @app.route('/api/contacts/<contact_id>', methods=['DELETE'])
+@require_jwt
 def delete_contact(contact_id):
     """Delete a contact by ID (emails will be cascade deleted)"""
     conn = get_db_connection()
@@ -236,6 +304,7 @@ def delete_contact(contact_id):
     return jsonify({'message': 'Contact deleted successfully'}), 200
 
 @app.route('/api/contacts/search', methods=['GET'])
+@require_jwt
 def search_contacts():
     """Search contacts by query string (including emails)"""
     query = request.args.get('q', '').strip()

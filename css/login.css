@@ -1,0 +1,131 @@
+/* Login header and button */
+.app-header {
+    max-width: 1200px;
+    margin: 0 auto 0;
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.app-header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.auth-greeting {
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.btn-login {
+    padding: 6px 16px;
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    background: white;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-login:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-logout {
+    padding: 6px 16px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background: white;
+    color: #555;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.btn-logout:hover {
+    background: #f0f0f0;
+    border-color: #666;
+    color: #333;
+}
+
+/* Main content disabled when login dialog is open */
+#main-content.disabled-by-login {
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.6;
+    filter: grayscale(0.2);
+}
+
+#main-content.disabled-by-login button,
+#main-content.disabled-by-login input,
+#main-content.disabled-by-login [contenteditable] {
+    cursor: not-allowed;
+}
+
+/* Login dialog */
+.login-dialog {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0;
+    max-width: 360px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.login-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.login-dialog form {
+    padding: 24px;
+}
+
+.login-dialog h2 {
+    margin: 0 0 20px 0;
+    font-size: 1.25rem;
+}
+
+.login-dialog .form-group {
+    margin-bottom: 16px;
+}
+
+.login-dialog .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.login-dialog .form-group input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.login-inline-error {
+    font-size: 0.875rem;
+    color: #c00;
+    margin-bottom: 12px;
+    display: none;
+}
+
+.login-inline-error.visible {
+    display: block;
+}
+
+.login-dialog-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.login-dialog-actions .btn-save {
+    flex: 1;
+}

@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="css/contact-form.css">
     <link rel="stylesheet" href="css/email.css">
     <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/login.css">
     <!-- API Configuration: Set window.API_BASE_URL in production -->
     <script>
         // For production, set this to your backend URL
@@ -22,7 +23,14 @@
 </head>
 
 <body>
-    <div class="container">
+    <header class="app-header">
+        <span id="auth-greeting" class="auth-greeting">Login to access contacts</span>
+        <div class="app-header-buttons">
+            <button type="button" class="btn btn-login" id="login-btn">Login</button>
+            <button type="button" class="btn btn-logout" id="logout-btn">Logout</button>
+        </div>
+    </header>
+    <div class="container" id="main-content">
         <main>
             <section class="contacts-section">
                 <div class="contacts-title-button-wrapper">
@@ -71,9 +79,29 @@
         </main>
     </div>
 
+    <dialog id="login-dialog" class="login-dialog" aria-labelledby="login-dialog-title" aria-modal="true">
+        <form id="login-form" method="dialog">
+            <h2 id="login-dialog-title">Log in</h2>
+            <div class="form-group">
+                <label for="login-username">Username</label>
+                <input type="text" id="login-username" name="username" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" name="password" autocomplete="current-password" required>
+            </div>
+            <div id="login-error" class="login-inline-error" role="alert" aria-live="polite"></div>
+            <div class="login-dialog-actions">
+                <button type="submit" class="btn btn-save">Log in</button>
+                <button type="button" class="btn btn-cancel" id="login-cancel-btn">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+
     <!-- Component JS files (order matters) -->
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/contacts.js"></script>
     <script src="js/email.js"></script>
     <script src="js/form.js"></script>
